@@ -13,14 +13,8 @@ class InstallCommand extends Command
     public function handle()
     {
         $this->info('Installing Pogo Queue...');
-
-        // 1. Copie des Stubs (Worker & Caddyfile)
         $this->publishStubs();
-
-        // 2. Injection de la config dans config/queue.php
         $this->configureQueueDriver();
-
-        // 3. Mise à jour du .env
         $this->updateEnvFile();
 
         $this->newLine();
@@ -55,14 +49,11 @@ class InstallCommand extends Command
         }
 
         $content = file_get_contents($configPath);
-
-        // On vérifie si la config existe déjà pour ne pas la dupliquer
         if (Str::contains($content, "'driver' => 'pogo'")) {
             $this->warn('Pogo driver configuration already exists in config/queue.php.');
             return;
         }
 
-        // Configuration à injecter
         $pogoConfig = <<<PHP
         
         'pogo' => [
@@ -72,7 +63,6 @@ class InstallCommand extends Command
         ],
 PHP;
 
-        // On cherche l'entrée 'connections' => [
         if (Str::contains($content, "'connections' => [")) {
             $content = Str::replaceFirst("'connections' => [", "'connections' => [" . $pogoConfig, $content);
             file_put_contents($configPath, $content);
