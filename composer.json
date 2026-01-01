@@ -14,7 +14,7 @@
   "extra": {
     "laravel": {
       "providers": [
-        "Pogo\\Queue\\QueueServiceProvider"
+        "Pogo\\Queue\\PogoQueueServiceProvider"
       ]
     }
   },
