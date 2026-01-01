@@ -4,7 +4,7 @@ use Laravel\Octane\ApplicationFactory;
 use Laravel\Octane\FrankenPhp\FrankenPhpClient;
 use Laravel\Octane\Worker;
 use Illuminate\Queue\WorkerOptions;
-use Acme\FrankenPHPQueue\FrankenPHPJob;
+use Pogo\Queue\PogoJob;
 
 if ((!($_SERVER['FRANKENPHP_WORKER'] ?? false)) || !function_exists('frankenphp_handle_request')) {
     echo 'FrankenPHP must be in worker mode to use this script.';
@@ -39,7 +39,7 @@ try {
             $app = $worker->application();
             $connection = $app['queue']->connection('pogo');
 
-            $job = new FrankenPHPJob(
+            $job = new PogoJob(
                 $app,
                 $connection,
                 $payload,
