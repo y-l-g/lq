@@ -1,0 +1,23 @@
+{
+  "name": "pogo/queue",
+  "description": "FrankenPHP In-Memory Queue Driver for Laravel",
+  "require": {
+    "php": "^8.5",
+    "laravel/framework": "^12.0",
+    "laravel/octane": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Pogo\\Queue\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Pogo\\Queue\\QueueServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}
