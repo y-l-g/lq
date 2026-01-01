@@ -37,7 +37,7 @@ try {
     $handleRequest = static function ($payload) use ($worker, $queueOptions) {
         try {
             $app = $worker->application();
-            $connection = $app['queue']->connection('frankenphp');
+            $connection = $app['queue']->connection('pogo');
 
             $job = new FrankenPHPJob(
                 $app,
