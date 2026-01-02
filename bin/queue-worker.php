@@ -31,22 +31,29 @@ $worker = tap(new Worker(
 
 $requestCount = 0;
 $maxRequests = $_ENV['MAX_REQUESTS'] ?? $_SERVER['MAX_REQUESTS'] ?? 1000;
+
+// Allow configuration via environment variables
+$queueConnection = $_ENV['POGO_CONNECTION'] ?? 'pogo';
+$queueName = $_ENV['POGO_QUEUE'] ?? 'default';
+
 $queueOptions = new WorkerOptions();
 
 try {
-    $handleRequest = static function ($payload) use ($worker, $queueOptions) {
+    $handleRequest = static function ($payload) use ($worker, $queueOptions, $queueConnection, $queueName) {
         try {
             $app = $worker->application();
-            $connection = $app['queue']->connection('pogo');
+
+            // Resolve the specifically configured connection
+            $connection = $app['queue']->connection($queueConnection);
 
             $job = new PogoJob(
                 $app,
                 $connection,
                 $payload,
-                'default'
+                $queueName
             );
 
-            $app['queue.worker']->process('frankenphp', $job, $queueOptions);
+            $app['queue.worker']->process($queueConnection, $job, $queueOptions);
 
         } catch (Throwable $e) {
             error_log("Worker Critical Error: " . $e->getMessage());
@@ -54,7 +61,7 @@ try {
                 try {
                     report($e);
                 } catch (Throwable $ex) {
-                    // Silent fail
+                    // Silent fail to prevent crash loop
                 }
             }
         }

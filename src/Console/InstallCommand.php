@@ -13,13 +13,14 @@ class InstallCommand extends Command
     public function handle()
     {
         $this->info('Installing Pogo Queue...');
+
         $this->publishStubs();
-        $this->configureQueueDriver();
         $this->updateEnvFile();
 
         $this->newLine();
         $this->info('Installation complete.');
-        $this->comment('Run Octane with: php artisan octane:start --server=frankenphp --caddyfile=Caddyfile');
+
+        $this->displayConfigInstructions();
     }
 
     protected function publishStubs()
@@ -35,40 +36,7 @@ class InstallCommand extends Command
             copy(__DIR__ . '/../../stubs/Caddyfile', base_path('Caddyfile'));
             $this->comment('Created Caddyfile example.');
         } else {
-            $this->warn('Caddyfile already exists. Please manually add the configuration.');
-        }
-    }
-
-    protected function configureQueueDriver()
-    {
-        $configPath = config_path('queue.php');
-
-        if (!file_exists($configPath)) {
-            $this->error('config/queue.php not found. Please run "php artisan config:publish queue" first.');
-            return;
-        }
-
-        $content = file_get_contents($configPath);
-        if (Str::contains($content, "'driver' => 'pogo'")) {
-            $this->warn('Pogo driver configuration already exists in config/queue.php.');
-            return;
-        }
-
-        $pogoConfig = <<<PHP
-        
-        'pogo' => [
-            'driver' => 'pogo',
-            'queue' => 'default',
-            'retry_after' => 90,
-        ],
-PHP;
-
-        if (Str::contains($content, "'connections' => [")) {
-            $content = Str::replaceFirst("'connections' => [", "'connections' => [" . $pogoConfig, $content);
-            file_put_contents($configPath, $content);
-            $this->info('Injected "pogo" driver into config/queue.php.');
-        } else {
-            $this->error('Could not find "connections" array in config/queue.php. Please add the pogo driver manually.');
+            $this->warn('Caddyfile already exists. Please verify the configuration.');
         }
     }
 
@@ -81,15 +49,42 @@ PHP;
         }
 
         $content = file_get_contents($envPath);
+        $updated = false;
 
-        if (Str::contains($content, 'QUEUE_CONNECTION=')) {
-            $content = preg_replace('/^QUEUE_CONNECTION=.*$/m', 'QUEUE_CONNECTION=pogo', $content);
-            $this->info('Updated QUEUE_CONNECTION to "pogo" in .env file.');
-        } else {
+        if (!Str::contains($content, 'QUEUE_CONNECTION=')) {
             $content .= "\nQUEUE_CONNECTION=pogo\n";
+            $updated = true;
             $this->info('Added QUEUE_CONNECTION=pogo to .env file.');
+        } elseif (preg_match('/^QUEUE_CONNECTION=(?!pogo).*/m', $content)) {
+            $this->warn('QUEUE_CONNECTION is set to something else in .env. Please update it to "pogo" manually if desired.');
         }
 
-        file_put_contents($envPath, $content);
+        if ($updated) {
+            file_put_contents($envPath, $content);
+        }
+    }
+
+    protected function displayConfigInstructions()
+    {
+        $this->newLine();
+        $this->warn('ACTION REQUIRED: Configure config/queue.php');
+        $this->line('Please add the following connection to your config/queue.php file in the "connections" array:');
+        $this->newLine();
+
+        $this->line('<fg=gray>' . $this->getConfigSnippet() . '</>');
+
+        $this->newLine();
+        $this->comment('Run Octane with: php artisan octane:start --server=frankenphp --caddyfile=Caddyfile');
+    }
+
+    protected function getConfigSnippet()
+    {
+        return <<<PHP
+        'pogo' => [
+            'driver' => 'pogo',
+            'queue' => env('POGO_QUEUE', 'default'),
+            'retry_after' => 90,
+        ],
+PHP;
     }
 }
